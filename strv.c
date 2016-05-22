@@ -11,7 +11,7 @@
  *	- strv形式のユーティリティ関数は、既存のclipstr.c,clipmisc.c等の中にもいくつか存在します。
  *	  既存の関数と同じ機能である関数は、マクロとして実装する事にしました。
  */
-#include "clip.h"
+///	#include "clip.h"
 /*****************************************************************************
  *	
  *****************************************************************************/
@@ -29,18 +29,8 @@ char** strv_new(const char* s, ...) {
 	va_end(ap);
 	return v;
 }
-#else //PIECE
-char** strv_new(const char* s, ...);
-asm("
-		.code
-		.align		1
-		.global		strv_new
-strv_new:
-");
-#endif//PIECE
 //-----------------------------------------------------------------------------
 //可変引数の各文字列を複製して、strvを作成する。
-#ifndef PIECE
 char** strv_new_ap(const char* s, va_list ap) {
 	char** v = calloc(1, sizeof(char*));
 	if(!v) { DIE(); }	//メモリ不足
@@ -51,12 +41,41 @@ char** strv_new_ap(const char* s, va_list ap) {
 	return v;
 }
 #else //PIECE
-char** strv_new_ap(const char* s, va_list ap);
+///	char** strv_new(const char* s, ...);
+///	char** strv_new_ap(const char* s, va_list ap);
 asm("
 		.code
 		.align		1
+		.global		strv_new
 		.global		strv_new_ap
+strv_new:
+		xld.w		%r12, [%sp+4]			;//%r12    := s
+		xadd		%r13, %sp, 8			;//%r13    := ap
+		;//---------------------------------------------;//
 strv_new_ap:
+		pushn		%r1				;//
+		xsub		%sp, %sp, 4			;//
+		ld.w		%r0, %r12			;//%r0     := s
+		ld.w		%r1, %r13			;//%r1     := ap
+		ld.w		%r12, 1				;//%r12    :=            1
+		xcall.d		calloc				;//%r10    := v = calloc(1, sizeof(char*))
+		ld.w		%r13, 4				;//%r13    :=               sizeof(char*)	*delay*
+		cmp		%r10, 0				;//if(!v) { DIE() }
+		jreq		DIE				;//
+		xld.w		[%sp+0], %r10			;//[%sp+0] := v
+strv_new_ap_LOOP:						;//
+		cmp		%r0, 0				;//while(s) {
+		jreq		strv_new_ap_RET			;//  
+		ld.w		%r12, %sp			;//  %r12    :=  &v
+		xcall.d		strv_extend			;//  strv_extend(&v, s)
+		ld.w		%r13, %r0			;//  %r13    :=      s				*delay*
+		ld.w		%r0, [%r1]+			;//  %r0     := s = va_arg(ap, const char*)
+		jp		strv_new_ap_LOOP		;//}
+strv_new_ap_RET:						;//
+		xld.w		%r10, [%sp+0]			;//%r10    := v
+		xadd		%sp, %sp, 4			;//
+		popn		%r1				;//
+		ret						;//return     v
 ");
 #endif//PIECE
 //-----------------------------------------------------------------------------
@@ -81,7 +100,7 @@ int strv_push(char*** pv, char* s) {
 	return 0;	//当実装は必ず成功(0)を返す。
 }
 #else //PIECE
-int strv_push(char*** pv, char* s);
+///	int strv_push(char*** pv, char* s);
 asm("
 		.code
 		.align		1
@@ -104,7 +123,7 @@ int strv_extend(char*** pv, const char* s) {
 	return strv_push(pv, t);
 }
 #else //PIECE
-int strv_extend(char*** pv, const char* s);
+///	int strv_extend(char*** pv, const char* s);
 asm("
 		.code
 		.align		1
@@ -129,7 +148,7 @@ char** strv_append(char** v, const char* s) {
 	return v;
 }
 #else //PIECE
-char** strv_append(char** v, const char* s);
+///	char** strv_append(char** v, const char* s);
 asm("
 		.code
 		.align		1
@@ -160,7 +179,7 @@ char** strv_merge(char** v1, char** v2) {
 	return v1;
 }
 #else //PIECE
-char** strv_merge(char** v1, char** v2);
+///	char** strv_merge(char** v1, char** v2);
 asm("
 		.code
 		.align		1
@@ -194,7 +213,7 @@ char** strv_remove(char** v, const char* s) {
 	return v;	//引数vをそのまま返す。
 }
 #else //PIECE
-char** strv_remove(char** v, const char* s);
+///	char** strv_remove(char** v, const char* s);
 asm("
 		.code
 		.align		1
@@ -221,7 +240,7 @@ char** strv_uniq(char** v) {
 	return v;	//引数vをそのまま返す。
 }
 #else //PIECE
-char** strv_uniq(char** v);
+///	char** strv_uniq(char** v);
 asm("
 		.code
 		.align		1
@@ -247,7 +266,7 @@ char* strv_find(char** v, const char* s) {
 	return t;
 }
 #else //PIECE
-char* strv_find(char** v, const char* s);
+///	char* strv_find(char** v, const char* s);
 asm("
 		.code
 		.align		1
@@ -276,7 +295,7 @@ int strv_overlap(char** v1, char** v2) {
 	return 0;
 }
 #else //PIECE
-int strv_overlap(char** v1, char** v2);
+///	int strv_overlap(char** v1, char** v2);
 asm("
 		.code
 		.align		1
@@ -304,7 +323,7 @@ char** strv_sort(char** v) {
 	return v;
 }
 #else //PIECE
-char** strv_sort(char** v);
+///	char** strv_sort(char** v);
 asm("
 		.code
 		.align		1
@@ -322,7 +341,7 @@ void strv_print(char** v) {
 	}
 }
 #else //PIECE
-void strv_print(char** v);
+///	void strv_print(char** v);
 asm("
 		.code
 		.align		1
