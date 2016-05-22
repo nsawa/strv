@@ -99,10 +99,44 @@ strv_overlap:
 		.align		1
 		.global		strv_sort
 strv_sort:
+		pushn		%r0				;//
+	ext	strv_length@rm	; 		xcall.d		strv_length			;//%r10 :=    strv_length(v)
+	call.d	strv_length@rl
+		ld.w		%r0, %r12			;//%r0  := v								*delay*
+		ld.w		%r12, %r0			;//%r12 := v
+		ld.w		%r13, %r10			;//%r13 :=    strv_length(v)
+	;//	ld.w		%r14, 4				;//%r14 :=                    sizeof(char*)	ÑüÑüÑüÑüÑüÑüÑüÑüÑ¢
+	ext	strv_sort_compar+0x0@h	; 		xld.w		%r15, strv_sort_compar		;//%r15 :=                                   strv_sort_compar	Ñ†
+	ext	strv_sort_compar+0x0@m
+	ld.w	%r15,strv_sort_compar+0x0@l
+	ext	qsort@rm	; 		xcall.d		qsort				;//qsort(  v, strv_length(v), sizeof(char*), strv_sort_compar)	Ñ†
+	call.d	qsort@rl
+		ld.w		%r14, 4				;//%r14 :=                    sizeof(char*)	Å©ÑüÑüÑüÑüÑüÑüÑüÑ£	*delay*
+		ld.w		%r10, %r0			;//%r10 := v
+		popn		%r0				;//
+		ret						;//return  v
+		;//- - - - - - - - - - - - - - - - - - - - - - -;//
+strv_sort_compar:
+		ld.w		%r12, [%r12]			;//%r12 :=       x    = *(char**)_x
+		ld.w		%r13, [%r13]			;//%r13 :=          y = *(char**)_y
+	ext	strcmp@rm	; 		xjp		strcmp				;//return strcmp(x, y)
+	jp	strcmp@rl
 
 
 		.code
 		.align		1
 		.global		strv_print
 strv_print:
+		pushn		%r0				;//
+		ld.w		%r0, %r12			;//%r0  := v
+strv_print_LOOP:						;//for(;;) {
+		ld.w		%r12, [%r0]+			;//  %r12 := s = *v++
+		cmp		%r12, 0				;//  if(!s) { break }
+		jreq		strv_print_RET			;//
+	ext	puts@rm		; 		xcall		puts				;//  puts(s)
+	call	puts@rl
+		jp		strv_print_LOOP			;//}
+strv_print_RET:							;//
+		popn		%r0				;//
+		ret						;//
 
