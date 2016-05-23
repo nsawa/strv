@@ -61,7 +61,7 @@ strv_new_ap:
 		xcall.d		calloc				;//%r10    := v = calloc(1, sizeof(char*))
 		ld.w		%r13, 4				;//%r13    :=               sizeof(char*)	*delay*
 		cmp		%r10, 0				;//if(!v) { DIE() }
-		jreq		DIE				;//
+		jreq		strv_new_ap_DIE			;//
 		xld.w		[%sp+0], %r10			;//[%sp+0] := v
 strv_new_ap_LOOP:						;//
 		cmp		%r0, 0				;//while(s) {
@@ -77,6 +77,7 @@ strv_new_ap_RET:						;//
 		popn		%r1				;//
 		ret						;//return     v
 ");
+static void __attribute__((noreturn,unused))/*asmブロックから参照*/ strv_new_ap_DIE() { DIE(); }
 #endif//PIECE
 //-----------------------------------------------------------------------------
 //(*pv)の末尾に文字列sを複製して追加する。
