@@ -147,6 +147,32 @@ strv_merge_RET:							;//
 		.align		1
 		.global		strv_remove
 strv_remove:
+		pushn		%r3				;//
+	sub	%sp,0x1		; 		xsub		%sp, %sp, 4			;//
+	ld.w	[%sp+0x0],%r12	; 		xld.w		[%sp+0x0], %r12			;//[%sp+0] := v
+		ld.w		%r0, %r12			;//%r0     := i = v
+		ld.w		%r1, %r12			;//%r1     := j = v
+		ld.w		%r2, %r13			;//%r2     := s
+strv_remove_LOOP:						;//for(;;) {
+		ld.w		%r3, [%r0]+			;//  %r3     := t = *i++
+		cmp		%r3, 0				;//  if(!t) { break }
+		jreq		strv_remove_RET			;//
+		ld.w		%r12, %r2			;//  %r12    :=        s
+	ext	strcmp@rm	; 		xcall.d		strcmp				;//  %r10    := strcmp(s, t)
+	call.d	strcmp@rl
+		ld.w		%r13, %r3			;//  %r13    :=           t	*delay*
+		jreq		3				;//  if(strcmp(s, t)) {
+		 ld.w		[%r1]+, %r3			;//    *j++  = t
+		 jp		strv_remove_LOOP		;//  } else {
+	ext	free@rm		; 		xcall.d		free				;//    free(   t)
+	call.d	free@rl
+		ld.w		%r12, %r3			;//    %r12    := t		*delay*
+		jp		strv_remove_LOOP		;//  }
+strv_remove_RET:						;//}
+	ld.w	%r10,[%sp+0x0]	; 		xld.w		%r10, [%sp+0x0]			;//%r10    := v
+	add	%sp,0x1		; 		xadd		%sp, %sp, 4			;//
+		popn		%r3				;//
+		ret						;//return     v
 
 
 		.code
