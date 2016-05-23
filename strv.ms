@@ -104,6 +104,19 @@ strv_extend_push_DIE:
 		.align		1
 		.global		strv_append
 strv_append:
+		pushn		%r0				;//
+	sub	%sp,0x1		; 		xsub		%sp, %sp, 4			;//
+	ext	strdupv@rm	; 		xcall.d		strdupv				;//%r10    := v = strv_copy(v) = strdupv(v)
+	call.d	strdupv@rl
+		ld.w		%r0, %r13			;//%r0     := s					*delay*
+	ld.w	[%sp+0x0],%r10	; 		xld.w		[%sp+0x0], %r10			;//[%sp+0] := v
+		ld.w		%r12, %sp			;//%r12    :=             &v
+	call.d	strv_extend	; 		xcall.d		strv_extend			;//%r10    := strv_extend(&v, s)
+		ld.w		%r13, %r0			;//%r13    :=                 s			*delay*
+	ld.w	%r10,[%sp+0x0]	; 		xld.w		%r10, [%sp+0x0]			;//%r10    := v
+	add	%sp,0x1		; 		xadd		%sp, %sp, 4			;//
+		popn		%r0				;//
+		ret						;//return     v
 
 
 		.code

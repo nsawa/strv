@@ -179,6 +179,18 @@ asm("
 		.align		1
 		.global		strv_append
 strv_append:
+		pushn		%r0				;//
+		xsub		%sp, %sp, 4			;//
+		xcall.d		strdupv				;//%r10    := v = strv_copy(v) = strdupv(v)
+		ld.w		%r0, %r13			;//%r0     := s					*delay*
+		xld.w		[%sp+0], %r10			;//[%sp+0] := v
+		ld.w		%r12, %sp			;//%r12    :=             &v
+		xcall.d		strv_extend			;//%r10    := strv_extend(&v, s)
+		ld.w		%r13, %r0			;//%r13    :=                 s			*delay*
+		xld.w		%r10, [%sp+0]			;//%r10    := v
+		xadd		%sp, %sp, 4			;//
+		popn		%r0				;//
+		ret						;//return     v
 ");
 #endif//PIECE
 //-----------------------------------------------------------------------------
