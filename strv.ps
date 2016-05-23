@@ -158,9 +158,9 @@ strv_find_LOOP:							;//for(;;) {
 		ld.w		%r2, [%r0]+			;//  %r2  := t = *v++
 		cmp		%r2, 0				;//  if(!t) { break }
 		jreq		strv_find_RET			;//
-		ld.w		%r12, %r1			;//  %r12 := s
+		ld.w		%r12, %r1			;//  %r12 :=        s
 		xcall.d		strcmp				;//  %r10 := strcmp(s, t)
-		ld.w		%r13, %r2			;//  %r13 := t				*delay*
+		ld.w		%r13, %r2			;//  %r13 :=           t		*delay*
 		cmp		%r10, 0				;//  if(!strcmp(s, t)) { break }
 		jrne		strv_find_LOOP			;//
 strv_find_RET:							;//}
@@ -173,6 +173,22 @@ strv_find_RET:							;//}
 		.align		1
 		.global		strv_overlap
 strv_overlap:
+		pushn		%r1				;//
+		ld.w		%r0, %r12			;//%r0  := v1
+		ld.w		%r1, %r13			;//%r1  := v2
+strv_overlap_LOOP:						;//for(;;) {
+		ld.w		%r10, [%r0]+			;//  %r10 := s = *v1++
+		cmp		%r10, 0				;//  if(!s) { return 0 }	„Ÿ„Ÿ„Ÿ„Ÿ„¢	‚±‚±‚Å•ªŠò‚·‚é‚ÍŠù‚É%r10=0‚Å‚·B
+		jreq		strv_overlap_RET		;//  					„ 
+		ld.w		%r12, %r1			;//  %r12 :=           v2		„ 
+		xcall.d		strv_find			;//  %r10 := strv_find(v2, s)		„ 
+		ld.w		%r13, %r10			;//  %r13 :=               s		„ 	*delay*
+		cmp		%r10, 0				;//  if(strv_find(v2, s)) { return 1 }	„ 
+		jreq		strv_overlap_LOOP		;//}					„ 
+		ld.w		%r10, 1				;//%r10  := 1			„Ÿ„Ÿ„Ÿ„Ÿ„§
+strv_overlap_RET:						;//					„ 
+		popn		%r1				;//					„ 
+		ret						;//return 0 or 1		©„Ÿ„Ÿ„Ÿ„£
 
 
 		.code
