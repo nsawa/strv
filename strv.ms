@@ -159,6 +159,23 @@ strv_uniq:
 		.align		1
 		.global		strv_find
 strv_find:
+		pushn		%r2				;//
+		ld.w		%r0, %r12			;//%r0  := v
+		ld.w		%r1, %r13			;//%r1  := s
+strv_find_LOOP:							;//for(;;) {
+		ld.w		%r2, [%r0]+			;//  %r2  := t = *v++
+		cmp		%r2, 0				;//  if(!t) { break }
+		jreq		strv_find_RET			;//
+		ld.w		%r12, %r1			;//  %r12 := s
+	ext	strcmp@rm	; 		xcall.d		strcmp				;//  %r10 := strcmp(s, t)
+	call.d	strcmp@rl
+		ld.w		%r13, %r2			;//  %r13 := t				*delay*
+		cmp		%r10, 0				;//  if(!strcmp(s, t)) { break }
+		jrne		strv_find_LOOP			;//
+strv_find_RET:							;//}
+		ld.w		%r10, %r2			;//%r10  := t
+		popn		%r2				;//
+		ret						;//return   t
 
 
 		.code
