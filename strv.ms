@@ -123,6 +123,24 @@ strv_append:
 		.align		1
 		.global		strv_merge
 strv_merge:
+		pushn		%r0				;//
+	sub	%sp,0x1		; 		xsub		%sp, %sp, 4			;//
+	ext	strdupv@rm	; 		xcall.d		strdupv				;//%r10    := v1 = strv_copy(v1) = strdupv(v1)
+	call.d	strdupv@rl
+		ld.w		%r0, %r13			;//%r0     := v2					*delay*
+	ld.w	[%sp+0x0],%r10	; 		xld.w		[%sp+0x0], %r10			;//[%sp+0] := v1
+strv_merge_LOOP:						;//for(;;) {
+		ld.w		%r13, [%r0]+			;//  %r13    := s = *v2++
+		cmp		%r13, 0				;//  if(!s) { break }
+		jreq		strv_merge_RET			;//
+		ld.w		%r12, %sp			;//  %r12    :=  &v1
+	call	strv_extend	; 		xcall		strv_extend			;//  strv_extend(&v1, s)
+		jp		strv_merge_LOOP			;//
+strv_merge_RET:							;//}
+	ld.w	%r10,[%sp+0x0]	; 		xld.w		%r10, [%sp+0x0]			;//%r10    := v1
+	add	%sp,0x1		; 		xadd		%sp, %sp, 4			;//
+		popn		%r0				;//
+		ret						;//return     v1
 
 
 		.code
