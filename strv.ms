@@ -49,15 +49,56 @@ strv_new_ap_RET:						;//
 
 		.code
 		.align		1
-		.global		strv_push
-strv_push:
-
-
-		.code
-		.align		1
 		.global		strv_extend
+		.global		strv_push
 strv_extend:
+		pushn		%r0				;//
+		ld.w		%r0, %r12			;//%r0  := pv
+	ext	strdup@rm	; 		xcall.d		strdup				;//%r10 := t = strdup(s)
+	call.d	strdup@rl
+		ld.w		%r12, %r13			;//%r12 :=            s					*delay*
+		cmp		%r10, 0				;//if(!t) { DIE() }
+		jreq		strv_extend_push_DIE		;//
+		ld.w		%r12, %r0			;//%r12 := pv
+		ld.w		%r13, %r10			;//%r13 := t
+		popn		%r0				;//
+		;//---------------------------------------------;//
+strv_push:
+		pushn		%r2				;//
+		ld.w		%r0, %r12			;//%r0  := pv
+		ld.w		%r1, %r13			;//%r1  := s
+		ld.w		%r2, [%r0]			;//%r2  := v = *pv
+	ext	strv_length@rm	; 		xcall.d		strv_length			;//%r10 := n = strv_length(v)				*anti-interlock*
+	call.d	strv_length@rl
+		ld.w		%r12, %r2			;//%r12 :=                 v				*delay*
+		ld.w		%r12, %r2			;//%r12 := v
+		ld.w		%r2, %r10			;//%r2  := n
+		sla		%r2, 2				;//%r2  := n * sizeof(char*)
+		ld.w		%r13, %r2			;//%r13 :=                sizeof(char*) *  n
+	ext	realloc@rm	; 		xcall.d		realloc				;//%r10 := v = realloc(v, sizeof(char*) * (n + 2))
+	call.d	realloc@rl
+		add		%r13, 8				;//%r13 :=                sizeof(char*) * (n + 2)	*delay*
+		cmp		%r10, 0				;//if(!v) { DIE() }
+		jreq		strv_extend_push_DIE		;//
+		add		%r2, %r10			;//%r2  := &v[n + 0]
+		ld.w		[%r2]+, %r1			;//         v[n + 0] = s
+		ld.w		[%r2], %r8			;//         v[n + 1] = NULL
+		ld.w		[%r0], %r10			;//*pv = v
+		popn		%r2				;//
+		ret.d						;//return  0
+		ld.w		%r10, 0				;//%r10 := 0						*delay*
 
+; NO_APP
+	.code
+	.align	1
+strv_extend_push_DIE:
+;	.frame	%sp,4,$31		# vars= 0, regs= 1/0, args= 0, extra= 0
+;	.mask	0x80000000,-4
+;	.fmask	0x00000000,0
+	ext	DIE@rm		; 	xcall	DIE
+	call	DIE@rl
+	ret
+; APP
 
 		.code
 		.align		1

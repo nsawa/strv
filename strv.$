@@ -79,36 +79,6 @@ strv_new_ap_RET:						;//
 ");
 #endif//PIECE
 //-----------------------------------------------------------------------------
-//(*pv)の末尾にポインタsを追加する。
-//文字列sは複製されない事に注意せよ。
-//オリジナル版の実装はメモリ不足が生じた時に0以外を返すが、当実装は必ず成功(0)を返す。
-//□使用例
-//│char** v = strv_new("123","456","789",NULL);
-//│char* s = strdup("ABC");
-//│strv_push(&v,s);
-//│strv_print(v);//123 456 789 ABC
-//│strv_free(v);
-#ifndef PIECE
-int strv_push(char*** pv, char* s) {
-	char** v = *pv;
-	int n = strv_length(v);
-	v = realloc(v, sizeof(char*) * (n + 2));
-	if(!v) { DIE(); }
-	v[n + 0] = s;
-	v[n + 1] = NULL;
-	*pv = v;
-	return 0;	//当実装は必ず成功(0)を返す。
-}
-#else //PIECE
-///	int strv_push(char*** pv, char* s);
-asm("
-		.code
-		.align		1
-		.global		strv_push
-strv_push:
-");
-#endif//PIECE
-//-----------------------------------------------------------------------------
 //(*pv)の末尾に文字列sを複製して追加する。
 //オリジナル版の実装はメモリ不足が生じた時に0以外を返すが、当実装は必ず成功(0)を返す。
 //□使用例
@@ -122,14 +92,69 @@ int strv_extend(char*** pv, const char* s) {
 	if(!t) { DIE(); }
 	return strv_push(pv, t);
 }
+//-----------------------------------------------------------------------------
+//(*pv)の末尾にポインタsを追加する。
+//文字列sは複製されない事に注意せよ。
+//オリジナル版の実装はメモリ不足が生じた時に0以外を返すが、当実装は必ず成功(0)を返す。
+//□使用例
+//│char** v = strv_new("123","456","789",NULL);
+//│char* s = strdup("ABC");
+//│strv_push(&v,s);
+//│strv_print(v);//123 456 789 ABC
+//│strv_free(v);
+int strv_push(char*** pv, char* s) {
+	char** v = *pv;
+	int n = strv_length(v);
+	v = realloc(v, sizeof(char*) * (n + 2));
+	if(!v) { DIE(); }
+	v[n + 0] = s;
+	v[n + 1] = NULL;
+	*pv = v;
+	return 0;	//当実装は必ず成功(0)を返す。
+}
 #else //PIECE
 ///	int strv_extend(char*** pv, const char* s);
+///	int strv_push(char*** pv, char* s);
 asm("
 		.code
 		.align		1
 		.global		strv_extend
+		.global		strv_push
 strv_extend:
+		pushn		%r0				;//
+		ld.w		%r0, %r12			;//%r0  := pv
+		xcall.d		strdup				;//%r10 := t = strdup(s)
+		ld.w		%r12, %r13			;//%r12 :=            s					*delay*
+		cmp		%r10, 0				;//if(!t) { DIE() }
+		jreq		strv_extend_push_DIE		;//
+		ld.w		%r12, %r0			;//%r12 := pv
+		ld.w		%r13, %r10			;//%r13 := t
+		popn		%r0				;//
+		;//---------------------------------------------;//
+strv_push:
+		pushn		%r2				;//
+		ld.w		%r0, %r12			;//%r0  := pv
+		ld.w		%r1, %r13			;//%r1  := s
+		ld.w		%r2, [%r0]			;//%r2  := v = *pv
+		xcall.d		strv_length			;//%r10 := n = strv_length(v)				*anti-interlock*
+		ld.w		%r12, %r2			;//%r12 :=                 v				*delay*
+		ld.w		%r12, %r2			;//%r12 := v
+		ld.w		%r2, %r10			;//%r2  := n
+		sla		%r2, 2				;//%r2  := n * sizeof(char*)
+		ld.w		%r13, %r2			;//%r13 :=                sizeof(char*) *  n
+		xcall.d		realloc				;//%r10 := v = realloc(v, sizeof(char*) * (n + 2))
+		add		%r13, 8				;//%r13 :=                sizeof(char*) * (n + 2)	*delay*
+		cmp		%r10, 0				;//if(!v) { DIE() }
+		jreq		strv_extend_push_DIE		;//
+		add		%r2, %r10			;//%r2  := &v[n + 0]
+		ld.w		[%r2]+, %r1			;//         v[n + 0] = s
+		ld.w		[%r2], %r8			;//         v[n + 1] = NULL
+		ld.w		[%r0], %r10			;//*pv = v
+		popn		%r2				;//
+		ret.d						;//return  0
+		ld.w		%r10, 0				;//%r10 := 0						*delay*
 ");
+static void __attribute__((noreturn,unused))/*asmブロックから参照*/ strv_extend_push_DIE() { DIE(); }
 #endif//PIECE
 //-----------------------------------------------------------------------------
 //vを複製し、末尾に文字列sを複製して追加する。
