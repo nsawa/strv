@@ -135,8 +135,8 @@ strv_merge_LOOP:						;//for(;;) {
 		jreq		strv_merge_RET			;//
 		ld.w		%r12, %sp			;//  %r12    :=  &v1
 	call	strv_extend	; 		xcall		strv_extend			;//  strv_extend(&v1, s)
-		jp		strv_merge_LOOP			;//
-strv_merge_RET:							;//}
+		jp		strv_merge_LOOP			;//}
+strv_merge_RET:							;//
 	ld.w	%r10,[%sp+0x0]	; 		xld.w		%r10, [%sp+0x0]			;//%r10    := v1
 	add	%sp,0x1		; 		xadd		%sp, %sp, 4			;//
 		popn		%r0				;//
@@ -153,6 +153,20 @@ strv_remove:
 		.align		1
 		.global		strv_uniq
 strv_uniq:
+		pushn		%r1				;//
+		ld.w		%r0, %r12			;//%r0  := v
+		ld.w		%r1, %r0			;//%r1  := i = v
+strv_uniq_LOOP:							;//for(;;) {
+		ld.w		%r13, [%r1]+			;//  %r13 := t = *i++
+		cmp		%r13, 0				;//  if(!t) { break }
+		jreq		strv_uniq_RET			;//
+	call.d	strv_remove	; 		xcall.d		strv_remove			;//  strv_remove(i, t)
+		ld.w		%r12, %r1			;//  %r12 :=     i		*delay*
+		jp		strv_uniq_LOOP			;//}
+strv_uniq_RET:							;//
+		ld.w		%r10, %r0			;//%r10 := v
+		popn		%r1				;//
+		ret						;//return  v
 
 
 		.code
@@ -171,8 +185,8 @@ strv_find_LOOP:							;//for(;;) {
 	call.d	strcmp@rl
 		ld.w		%r13, %r2			;//  %r13 :=           t		*delay*
 		cmp		%r10, 0				;//  if(!strcmp(s, t)) { break }
-		jrne		strv_find_LOOP			;//
-strv_find_RET:							;//}
+		jrne		strv_find_LOOP			;//}
+strv_find_RET:							;//
 		ld.w		%r10, %r2			;//%r10  := t
 		popn		%r2				;//
 		ret						;//return   t
